@@ -2,6 +2,7 @@
 use crate::game::{CLEAR_COLOR_MISS, GameProgress, GameState, GameStateCooldown};
 use bevy::prelude::*;
 use crate::managers::{HidePrompt, ShowPrompt, UpdateLevelText, UpdateStarsText};
+use crate::managers::audio_manager::PlayUnlockSfx;
 
 pub struct LevelManagerPlugin;
 impl Plugin for LevelManagerPlugin {
@@ -46,6 +47,7 @@ fn on_dot_hit(
     if progress.hits_remaining == 0 {
         next_state.set(GameState::LevelCleared);
         progress.level_up();
+        commands.trigger(PlayUnlockSfx);
     } else {
         commands.trigger(SpawnDot);
     }

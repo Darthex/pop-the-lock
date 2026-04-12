@@ -3,6 +3,7 @@ mod game;
 mod managers;
 mod utils;
 
+use crate::components::animation::AnimationPlugin;
 use crate::components::*;
 use crate::game::*;
 use crate::managers::*;
@@ -35,9 +36,11 @@ fn main() {
         .add_plugins(GamePlugin)
         .add_plugins(LevelManagerPlugin)
         .add_plugins(UiManagerPlugin)
+        .add_plugins(AudioManagerPlugin)
         .add_plugins(DotPlugin)
         .add_plugins(TriggerPlugin)
         .add_plugins(LockHatPlugin)
+        .add_plugins(AnimationPlugin)
         //
         .add_systems(Startup, setup)
         .run();

@@ -53,11 +53,19 @@ impl Plugin for GamePlugin {
 
 #[derive(Resource)]
 pub struct GameAssets {
+    // sprites
     pub dot_asset: Handle<Image>,
     pub dot_point_asset: Handle<Image>,
     pub lock_frame_asset: Handle<Image>,
     pub lock_hat_asset: Handle<Image>,
     pub lock_pick_asset: Handle<Image>,
+    // sounds
+    pub background_score_sfx: Handle<AudioSource>,
+    pub star_pop_sfx: Handle<AudioSource>,
+    pub dot_pop_sfx: Handle<AudioSource>,
+    pub game_over_sfx: Handle<AudioSource>,
+    pub game_won_sfx: Handle<AudioSource>,
+    // fonts
     pub base_font: Handle<Font>,
     pub icon_font: Handle<Font>,
 }
@@ -107,6 +115,11 @@ fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
         lock_frame_asset: asset_server.load("sprites/frame.png"),
         lock_hat_asset: asset_server.load("sprites/hat.png"),
         lock_pick_asset: asset_server.load("sprites/pick.png"),
+        background_score_sfx: asset_server.load("sounds/background.mp3"),
+        star_pop_sfx: asset_server.load("sounds/starPop.mp3"),
+        dot_pop_sfx: asset_server.load("sounds/dotPopBoosted.mp3"),
+        game_over_sfx: asset_server.load("sounds/lostBoosted.mp3"),
+        game_won_sfx: asset_server.load("sounds/unlockBoosted.mp3"),
         base_font: asset_server.load("fonts/Coiny-Regular.ttf"),
         icon_font: asset_server.load("fonts/NotoSansSymbols2-Regular.ttf"),
     });

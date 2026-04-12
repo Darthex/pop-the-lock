@@ -11,6 +11,6 @@ opt-level = 3
 
 [dependencies]
 my_macros = { path = "./my_macros" }
-bevy = "0.18.1"
+bevy = { version = "0.18.1", features = ["mp3"] }
 bevy-inspector-egui = "0.36.0"
 rand = "0.10.1"
