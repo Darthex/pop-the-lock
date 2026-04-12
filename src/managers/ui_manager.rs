@@ -59,7 +59,7 @@ impl Default for PromptTimer {
     }
 }
 
-fn spawn_screen_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
+fn spawn_screen_ui(mut commands: Commands, game_assets: Res<GameAssets>, progress: Res<GameProgress>) {
     commands
         .spawn(Node {
             width: Val::Percent(100.0),
@@ -80,7 +80,7 @@ fn spawn_screen_ui(mut commands: Commands, game_assets: Res<GameAssets>) {
                 ))
                 .with_children(|parent| {
                     parent.spawn((
-                        TextSpan::new("0"),
+                        TextSpan::new(progress.score().to_string()),
                         TextFont {
                             font: game_assets.base_font.clone(),
                             font_size: 48.0,
@@ -100,7 +100,7 @@ pub fn spawn_world_ui(
     progress: &GameProgress,
 ) {
     parent.spawn((
-        Text2d::new(progress.hits_remaining.to_string()),
+        Text2d::new(progress.hits_remaining().to_string()),
         TextFont {
             font: game_assets.base_font.clone(),
             font_size: 160.0,
@@ -138,10 +138,10 @@ fn on_hide_prompt(_: On<HidePrompt>, prompt: Option<Single<&mut Visibility, With
 
 fn on_update_stars(
     _: On<UpdateStarsText>,
-    mut stars: Single<&mut Text, With<StarsText>>,
+    mut stars: Single<&mut TextSpan, With<StarsText>>,
     progress: Res<GameProgress>,
 ) {
-    stars.0 = progress.score.to_string();
+    stars.0 = progress.score().to_string();
 }
 
 fn on_update_level(

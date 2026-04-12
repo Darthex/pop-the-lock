@@ -1,8 +1,9 @@
 ﻿use crate::components::dot::SpawnDot;
 use crate::game::{CLEAR_COLOR_MISS, GameProgress, GameState, GameStateCooldown};
-use bevy::prelude::*;
-use crate::managers::{HidePrompt, ShowPrompt, UpdateLevelText, UpdateStarsText};
 use crate::managers::audio_manager::PlayUnlockSfx;
+use crate::managers::{HidePrompt, ShowPrompt, UpdateLevelText, UpdateStarsText};
+use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 
 pub struct LevelManagerPlugin;
 impl Plugin for LevelManagerPlugin {
@@ -36,17 +37,19 @@ fn on_dot_hit(
     mut commands: Commands,
     mut progress: ResMut<GameProgress>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut pkv_store: ResMut<PkvStore>,
 ) {
     if hit.should_score {
-        progress.score += 1;
+        progress.score_up(&mut pkv_store);
         commands.trigger(UpdateStarsText);
     }
-    progress.hits_remaining -= 1;
-    commands.trigger(UpdateLevelText(progress.hits_remaining));
+    
+    progress.decrease_hits();
+    commands.trigger(UpdateLevelText(progress.hits_remaining()));
 
-    if progress.hits_remaining == 0 {
+    if progress.hits_remaining() == 0 {
         next_state.set(GameState::LevelCleared);
-        progress.level_up();
+        progress.level_up(&mut pkv_store);
         commands.trigger(PlayUnlockSfx);
     } else {
         commands.trigger(SpawnDot);

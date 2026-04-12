@@ -8,6 +8,8 @@ use crate::components::*;
 use crate::game::*;
 use crate::managers::*;
 use bevy::{prelude::*, window::WindowResolution};
+
+#[cfg(debug_assertions)]
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
 const CANVAS_SCALE: u32 = 2;
@@ -15,8 +17,8 @@ const CANVAS_HEIGHT: u32 = 720 * CANVAS_SCALE;
 const CANVAS_WIDTH: u32 = 1280 * CANVAS_SCALE;
 
 fn main() {
-    App::new()
-        .insert_resource(ClearColor(Color::srgb_u8(170, 136, 187)))
+    let mut app = App::new();
+    app.insert_resource(ClearColor(Color::srgb_u8(170, 136, 187)))
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -29,10 +31,6 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
-        // inspector plugins
-        .add_plugins(EguiPlugin::default())
-        .add_plugins(WorldInspectorPlugin::new())
-        // game plugins
         .add_plugins(GamePlugin)
         .add_plugins(LevelManagerPlugin)
         .add_plugins(UiManagerPlugin)
@@ -41,9 +39,14 @@ fn main() {
         .add_plugins(TriggerPlugin)
         .add_plugins(LockHatPlugin)
         .add_plugins(AnimationPlugin)
-        //
         .add_systems(Startup, setup)
         .run();
+
+    #[cfg(debug_assertions)]
+    app.add_plugins(EguiPlugin::default())
+        .add_plugins(WorldInspectorPlugin::new());
+
+    app.run();
 }
 
 fn setup(mut commands: Commands) {

@@ -2,6 +2,7 @@
 use crate::managers::spawn_world_ui;
 use crate::utils::random_choice;
 use bevy::prelude::*;
+use bevy_pkv::PkvStore;
 use my_macros::serialize;
 
 pub const RING_SIZE: f32 = 500.0;
@@ -35,6 +36,7 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
+            .insert_resource(PkvStore::new("cxc", "pop-the-lock"))
             .add_systems(
                 Startup,
                 (load_resources, spawn_scene).chain().in_set(GameStartup),
@@ -72,23 +74,44 @@ pub struct GameAssets {
 
 #[derive(Resource)]
 pub struct GameProgress {
-    pub level: u32,
-    pub score: u32,
-    pub hits_remaining: u32,
+    level: u32,
+    score: u32,
+    hits_remaining: u32,
 }
 
 impl GameProgress {
-    fn new() -> Self {
+    fn new(pkv: Res<PkvStore>) -> Self {
+        let level = pkv.get("level").unwrap_or(1);
+        let score = pkv.get("score").unwrap_or(0);
         Self {
-            level: 1,
-            score: 0,
-            hits_remaining: 1,
+            level,
+            score,
+            hits_remaining: level,
         }
     }
 
-    pub fn level_up(&mut self) {
+    pub fn score(&self) -> u32 {
+        self.score
+    }
+
+    pub fn hits_remaining(&self) -> u32 {
+        self.hits_remaining
+    }
+
+    pub fn decrease_hits(&mut self) {
+        self.hits_remaining -= 1;
+    }
+
+    pub fn level_up(&mut self, pkv: &mut PkvStore) {
         self.level += 1;
         self.hits_remaining = self.level;
+
+        pkv.set("level", &self.level).expect("Failed to save level");
+    }
+
+    pub fn score_up(&mut self, pkv: &mut PkvStore) {
+        self.score += 1;
+        pkv.set("score", &self.score).expect("Failed to save score");
     }
 
     pub fn reset(&mut self) {
@@ -108,7 +131,7 @@ impl Default for GameStateCooldown {
 #[serialize]
 pub struct Lock;
 
-fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>, pkv: Res<PkvStore>) {
     commands.insert_resource(GameAssets {
         dot_asset: asset_server.load("sprites/dot.png"),
         dot_point_asset: asset_server.load("sprites/dot_point.png"),
@@ -123,7 +146,7 @@ fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
         base_font: asset_server.load("fonts/Coiny-Regular.ttf"),
         icon_font: asset_server.load("fonts/NotoSansSymbols2-Regular.ttf"),
     });
-    commands.insert_resource(GameProgress::new());
+    commands.insert_resource(GameProgress::new(pkv));
     commands.insert_resource(GameStateCooldown::default());
 }
 
