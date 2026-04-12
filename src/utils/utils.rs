@@ -44,3 +44,8 @@ pub fn get_safe_dot_angle(trigger_angle: f32, direction: f32) -> f32 {
     let buffer = 0.1;
     rand::random::<f32>() * (high - low - buffer * 2.0) + low + buffer
 }
+
+pub fn get_point_star() -> bool {
+    let mut rng = rand::rng();
+    rng.random_range(0..=15) == 15
+}

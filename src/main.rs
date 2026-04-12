@@ -1,15 +1,11 @@
-mod dot;
+mod components;
 mod game;
-mod hat;
-mod level_manager;
-mod trigger;
+mod managers;
 mod utils;
 
-use crate::dot::DotPlugin;
+use crate::components::*;
 use crate::game::*;
-use crate::hat::LockHatPlugin;
-use crate::level_manager::LevelManagerPlugin;
-use crate::trigger::*;
+use crate::managers::*;
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
 
@@ -38,6 +34,7 @@ fn main() {
         // game plugins
         .add_plugins(GamePlugin)
         .add_plugins(LevelManagerPlugin)
+        .add_plugins(UiManagerPlugin)
         .add_plugins(DotPlugin)
         .add_plugins(TriggerPlugin)
         .add_plugins(LockHatPlugin)

@@ -1,4 +1,4 @@
-﻿use crate::dot::{DOT_ANGLE_SIZE, TargetDot};
+﻿use crate::components::dot::{DOT_ANGLE_SIZE, TargetDot};
 use crate::game::{GameAssets, GameCleanup, GameStartup, GameState, Lock, RING_RADIUS, RING_SIZE};
 use crate::level_manager::{DotHit, DotMissed};
 use crate::utils::random_choice;
@@ -24,6 +24,7 @@ impl Plugin for TriggerPlugin {
             )
             .add_systems(Update, check_input.run_if(in_state(GameState::Playing)));
         Trigger::register(app);
+        Direction::register(app);
     }
 }
 
@@ -121,13 +122,15 @@ fn check_input(
 
     if trigger.inside_dot {
         // hit
-        let (dot_entity, _) = dot.into_inner();
+        let (dot_entity, data) = dot.into_inner();
         trigger.clicked_during_overlap = true;
-        trigger.speed += 0.1;
+        trigger.speed += 0.2;
         trigger.inside_dot = false;
         trigger.direction.negate();
         commands.entity(dot_entity).despawn();
-        commands.trigger(DotHit);
+        commands.trigger(DotHit {
+            should_score: data.is_star,
+        });
     } else {
         // clicked outside
         commands.trigger(DotMissed);

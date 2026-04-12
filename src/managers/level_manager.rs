@@ -1,12 +1,7 @@
-﻿use crate::dot::SpawnDot;
+﻿use crate::components::dot::SpawnDot;
 use crate::game::{CLEAR_COLOR_MISS, GameProgress, GameState, GameStateCooldown};
 use bevy::prelude::*;
-
-#[derive(Event)]
-pub struct DotHit;
-
-#[derive(Event)]
-pub struct DotMissed;
+use crate::managers::{HidePrompt, ShowPrompt, UpdateLevelText, UpdateStarsText};
 
 pub struct LevelManagerPlugin;
 impl Plugin for LevelManagerPlugin {
@@ -17,8 +12,7 @@ impl Plugin for LevelManagerPlugin {
             .add_systems(
                 Update,
                 (
-                    on_input_go_to(GameState::Playing, false).
-                        run_if(in_state(GameState::Idle)),
+                    on_input_go_to(GameState::Playing, false).run_if(in_state(GameState::Idle)),
                     on_input_go_to(GameState::Resetting, true)
                         .run_if(in_state(GameState::LevelCleared)),
                     on_input_go_to(GameState::Resetting, true)
@@ -28,13 +22,27 @@ impl Plugin for LevelManagerPlugin {
     }
 }
 
+#[derive(Event)]
+pub struct DotHit {
+    pub should_score: bool,
+}
+
+#[derive(Event)]
+pub struct DotMissed;
+
 fn on_dot_hit(
-    _: On<DotHit>,
+    hit: On<DotHit>,
     mut commands: Commands,
     mut progress: ResMut<GameProgress>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
+    if hit.should_score {
+        progress.score += 1;
+        commands.trigger(UpdateStarsText);
+    }
     progress.hits_remaining -= 1;
+    commands.trigger(UpdateLevelText(progress.hits_remaining));
+
     if progress.hits_remaining == 0 {
         next_state.set(GameState::LevelCleared);
         progress.level_up();
@@ -45,11 +53,13 @@ fn on_dot_hit(
 
 fn on_dot_missed(
     _: On<DotMissed>,
+    mut commands: Commands,
     mut progress: ResMut<GameProgress>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     progress.reset();
     next_state.set(GameState::GameOver);
+    commands.trigger(ShowPrompt("TRY AGAIN"))
 }
 
 fn on_game_over(mut clear_color: ResMut<ClearColor>, mut cooldown: ResMut<GameStateCooldown>) {
@@ -66,9 +76,9 @@ fn on_input_go_to(
     ResMut<NextState<GameState>>,
     ResMut<GameStateCooldown>,
     Res<Time>,
-    ResMut<ClearColor>,
+    Commands,
 ) {
-    move |keys, mouse, mut next_state, mut cd, time, mut clear_color| {
+    move |keys, mouse, mut next_state, mut cd, time, mut commands| {
         if cooldown {
             cd.0.tick(time.delta());
             if !cd.0.is_finished() {
@@ -81,6 +91,7 @@ fn on_input_go_to(
             return;
         }
 
+        commands.trigger(HidePrompt);
         next_state.set(state.clone());
         if cooldown {
             cd.0.reset();

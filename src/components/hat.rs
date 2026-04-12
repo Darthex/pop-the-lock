@@ -3,9 +3,9 @@ use bevy::prelude::*;
 use my_macros::serialize;
 
 const HAT_WIDTH: f32 = 721.0;
-const HAT_HEIGHT: f32 = 878.0;
-const HAT_SCALE: f32 = RING_SIZE / 1201.0;
-const HAT_OFFSET: f32 = 80.0;
+pub const HAT_HEIGHT: f32 = 878.0;
+pub const HAT_SCALE: f32 = RING_SIZE / 1201.0;
+pub const HAT_OFFSET: f32 = 80.0;
 const HAT_ANIMATE_SPEED: f32 = 700.0; // pixels per second
 const HAT_ANIMATE_DISTANCE: f32 = 100.0;
 
@@ -21,6 +21,7 @@ impl Plugin for LockHatPlugin {
                 Update,
                 animate_hat.run_if(in_state(GameState::LevelCleared)),
             );
+        LockHat::register(app);
     }
 }
 

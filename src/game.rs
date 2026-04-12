@@ -1,4 +1,5 @@
-﻿use crate::dot::SpawnDot;
+﻿use crate::components::dot::SpawnDot;
+use crate::managers::spawn_world_ui;
 use crate::utils::random_choice;
 use bevy::prelude::*;
 use my_macros::serialize;
@@ -57,11 +58,14 @@ pub struct GameAssets {
     pub lock_frame_asset: Handle<Image>,
     pub lock_hat_asset: Handle<Image>,
     pub lock_pick_asset: Handle<Image>,
+    pub base_font: Handle<Font>,
+    pub icon_font: Handle<Font>,
 }
 
 #[derive(Resource)]
 pub struct GameProgress {
     pub level: u32,
+    pub score: u32,
     pub hits_remaining: u32,
 }
 
@@ -69,6 +73,7 @@ impl GameProgress {
     fn new() -> Self {
         Self {
             level: 1,
+            score: 0,
             hits_remaining: 1,
         }
     }
@@ -97,11 +102,13 @@ pub struct Lock;
 
 fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GameAssets {
-        dot_asset: asset_server.load("dot.png"),
-        dot_point_asset: asset_server.load("dot_point.png"),
-        lock_frame_asset: asset_server.load("frame.png"),
-        lock_hat_asset: asset_server.load("hat.png"),
-        lock_pick_asset: asset_server.load("pick.png"),
+        dot_asset: asset_server.load("sprites/dot.png"),
+        dot_point_asset: asset_server.load("sprites/dot_point.png"),
+        lock_frame_asset: asset_server.load("sprites/frame.png"),
+        lock_hat_asset: asset_server.load("sprites/hat.png"),
+        lock_pick_asset: asset_server.load("sprites/pick.png"),
+        base_font: asset_server.load("fonts/Coiny-Regular.ttf"),
+        icon_font: asset_server.load("fonts/NotoSansSymbols2-Regular.ttf"),
     });
     commands.insert_resource(GameProgress::new());
     commands.insert_resource(GameStateCooldown::default());
@@ -110,18 +117,23 @@ fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn spawn_scene(
     mut commands: Commands,
     game_assets: Res<GameAssets>,
+    progress: Res<GameProgress>,
     mut clear_color: ResMut<ClearColor>,
 ) {
-    commands.spawn((
-        Sprite {
-            custom_size: Some(Vec2::splat(RING_SIZE)),
-            image: game_assets.lock_frame_asset.clone(),
-            ..default()
-        },
-        Transform::from_xyz(0.0, -220.0, 0.0),
-        Lock,
-        Name::new("Lock"),
-    ));
+    commands
+        .spawn((
+            Sprite {
+                custom_size: Some(Vec2::splat(RING_SIZE)),
+                image: game_assets.lock_frame_asset.clone(),
+                ..default()
+            },
+            Transform::from_xyz(0.0, -220.0, 0.0),
+            Lock,
+            Name::new("Lock"),
+        ))
+        .with_children(|parent| {
+            spawn_world_ui(parent, &game_assets, &progress);
+        });
     commands.trigger(SpawnDot);
     *clear_color = ClearColor(*random_choice(&CLEAR_COLORS));
 }
