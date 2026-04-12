@@ -3,10 +3,10 @@ use crate::utils::random_choice;
 use bevy::prelude::*;
 use my_macros::serialize;
 
-pub const RING_SIZE: f32 = 500.0; // 350
+pub const RING_SIZE: f32 = 500.0;
 pub const RING_RADIUS: f32 = RING_SIZE * (500.0 / 1201.0);
 
-const CLEAR_COLOR_MISS: Color = Color::srgb_u8(199, 78, 81);
+pub const CLEAR_COLOR_MISS: Color = Color::srgb_u8(199, 78, 81);
 const CLEAR_COLORS: [Color; 5] = [
     Color::srgb_u8(56, 73, 101),
     Color::srgb_u8(255, 196, 155),
@@ -31,7 +31,6 @@ pub enum GameState {
 }
 
 pub struct GamePlugin;
-
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<GameState>()
@@ -46,17 +45,6 @@ impl Plugin for GamePlugin {
             .add_systems(
                 OnEnter(GameState::Resetting),
                 transition_to_idle.after(GameCleanup),
-            )
-            .add_systems(OnEnter(GameState::GameOver), on_game_over)
-            .add_systems(
-                Update,
-                (
-                    on_input_go_to(GameState::Playing, false).run_if(in_state(GameState::Idle)),
-                    on_input_go_to(GameState::Resetting, true)
-                        .run_if(in_state(GameState::LevelCleared)),
-                    on_input_go_to(GameState::Resetting, true)
-                        .run_if(in_state(GameState::GameOver)),
-                ),
             );
         Lock::register(app);
     }
@@ -65,8 +53,8 @@ impl Plugin for GamePlugin {
 #[derive(Resource)]
 pub struct GameAssets {
     pub dot_asset: Handle<Image>,
-    dot_point_asset: Handle<Image>,
-    lock_frame_asset: Handle<Image>,
+    pub dot_point_asset: Handle<Image>,
+    pub lock_frame_asset: Handle<Image>,
     pub lock_hat_asset: Handle<Image>,
     pub lock_pick_asset: Handle<Image>,
 }
@@ -96,13 +84,16 @@ impl GameProgress {
 }
 
 #[derive(Resource)]
-pub struct GameStateCooldown(Timer);
+pub struct GameStateCooldown(pub Timer);
 
 impl Default for GameStateCooldown {
     fn default() -> Self {
         Self(Timer::from_seconds(0.5, TimerMode::Once))
     }
 }
+
+#[serialize]
+pub struct Lock;
 
 fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GameAssets {
@@ -115,9 +106,6 @@ fn load_resources(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GameProgress::new());
     commands.insert_resource(GameStateCooldown::default());
 }
-
-#[serialize]
-pub struct Lock;
 
 pub fn spawn_scene(
     mut commands: Commands,
@@ -135,47 +123,13 @@ pub fn spawn_scene(
         Name::new("Lock"),
     ));
     commands.trigger(SpawnDot);
-
     *clear_color = ClearColor(*random_choice(&CLEAR_COLORS));
 }
 
 fn cleanup_scene(mut commands: Commands, lock: Single<Entity, With<Lock>>) {
-    commands.entity(*lock).despawn(); // despawns lock + all children (dot, trigger)
+    commands.entity(*lock).despawn();
 }
 
 fn transition_to_idle(mut next_state: ResMut<NextState<GameState>>) {
     next_state.set(GameState::Idle);
-}
-
-fn on_input_go_to(
-    state: GameState,
-    cooldown: bool,
-) -> impl Fn(
-    Res<ButtonInput<KeyCode>>,
-    Res<ButtonInput<MouseButton>>,
-    ResMut<NextState<GameState>>,
-    ResMut<GameStateCooldown>,
-    Res<Time>,
-) {
-    move |keys, mouse, mut next_state, mut cd, time| {
-        if cooldown {
-            cd.0.tick(time.delta());
-            if !cd.0.is_finished() {
-                return;
-            }
-        }
-
-        let pressed = keys.just_pressed(KeyCode::Space) || mouse.just_pressed(MouseButton::Left);
-        if !pressed {
-            return;
-        }
-        next_state.set(state.clone());
-        if cooldown {
-            cd.0.reset();
-        }
-    }
-}
-
-fn on_game_over(mut clear_color: ResMut<ClearColor>) {
-    *clear_color = ClearColor(CLEAR_COLOR_MISS);
 }

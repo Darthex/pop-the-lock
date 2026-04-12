@@ -1,7 +1,6 @@
-﻿use crate::dot::{DOT_ANGLE_SIZE, SpawnDot, TargetDot};
-use crate::game::{
-    GameAssets, GameCleanup, GameProgress, GameStartup, GameState, Lock, RING_RADIUS, RING_SIZE,
-};
+﻿use crate::dot::{DOT_ANGLE_SIZE, TargetDot};
+use crate::game::{GameAssets, GameCleanup, GameStartup, GameState, Lock, RING_RADIUS, RING_SIZE};
+use crate::level_manager::{DotHit, DotMissed};
 use crate::utils::random_choice;
 use bevy::prelude::*;
 use my_macros::serialize;
@@ -24,7 +23,6 @@ impl Plugin for TriggerPlugin {
                 rotate_trigger.run_if(in_state(GameState::Playing)),
             )
             .add_systems(Update, check_input.run_if(in_state(GameState::Playing)));
-
         Trigger::register(app);
     }
 }
@@ -34,16 +32,16 @@ pub struct Trigger {
     pub angle: f32,
     pub speed: f32,
     pub direction: Direction,
-    inside_dot: bool,
-    exited_dot: bool,
-    clicked_during_overlap: bool,
+    pub inside_dot: bool,
+    pub exited_dot: bool,
+    pub clicked_during_overlap: bool,
 }
 
 #[serialize]
 pub struct Direction(pub f32);
 impl Direction {
-    fn negate(&mut self) {
-        self.0 = -self.0
+    pub fn negate(&mut self) {
+        self.0 = -self.0;
     }
 }
 
@@ -63,7 +61,7 @@ fn spawn_trigger(
             Trigger {
                 angle: std::f32::consts::FRAC_PI_2,
                 speed: PICK_SPEED,
-                direction: Direction(*random_choice(&[1.0, -1.0]) as f32),
+                direction: Direction(*random_choice(&[1.0f32, -1.0])),
                 ..default()
             },
             Name::new("Pick"),
@@ -108,12 +106,11 @@ fn check_input(
     mouse: Res<ButtonInput<MouseButton>>,
     mut trigger: Single<&mut Trigger>,
     dot: Single<(Entity, &TargetDot)>,
-    mut next_state: ResMut<NextState<GameState>>,
-    mut progress: ResMut<GameProgress>,
 ) {
+    // exited without clicking
     if trigger.exited_dot {
-        next_state.set(GameState::GameOver);
         trigger.exited_dot = false;
+        commands.trigger(DotMissed);
         return;
     }
 
@@ -123,24 +120,16 @@ fn check_input(
     }
 
     if trigger.inside_dot {
-        trigger.clicked_during_overlap = true;
         // hit
         let (dot_entity, _) = dot.into_inner();
+        trigger.clicked_during_overlap = true;
+        trigger.speed += 0.1;
+        trigger.inside_dot = false;
+        trigger.direction.negate();
         commands.entity(dot_entity).despawn();
-
-        progress.hits_remaining -= 1;
-        if progress.hits_remaining <= 0 {
-            next_state.set(GameState::LevelCleared);
-            progress.level_up();
-        } else {
-            trigger.speed += 0.1;
-            trigger.inside_dot = false;
-            trigger.direction.negate();
-            commands.trigger(SpawnDot);
-        }
+        commands.trigger(DotHit);
     } else {
-        // miss
-        next_state.set(GameState::GameOver);
-        progress.reset();
+        // clicked outside
+        commands.trigger(DotMissed);
     }
 }
