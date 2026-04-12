@@ -1,0 +1,16 @@
+[package]
+name = "pop_the_lock"
+version = "0.1.0"
+edition = "2024"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[dependencies]
+my_macros = { path = "./my_macros" }
+bevy = "0.18.1"
+bevy-inspector-egui = "0.36.0"
+rand = "0.10.1"
