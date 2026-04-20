@@ -1,0 +1,38 @@
+﻿name: Build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows
+          path: |
+            target/release/pop_the_lock.exe
+            assets/
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: sudo apt-get install -y libasound2-dev libudev-dev
+      - name: Build
+        run: cargo build --release
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux
+          path: |
+            target/release/pop_the_lock
+            assets/
